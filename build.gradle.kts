@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.archivesName
 import org.jetbrains.kotlin.gradle.utils.NativeCompilerDownloader
 
 plugins {
-    kotlin("multiplatform") version "1.8.21"
+    kotlin("multiplatform") version "1.9.0-Beta"
 }
 
 group = "org.jetbrains.kotlin"
@@ -33,6 +33,25 @@ kotlin {
 
 fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
 
+val zipNativeDistributionKlibs by tasks.creating(Zip::class.java) {
+    val konanHome = NativeCompilerDownloader(project).compilerDirectory.absoluteFile
+    val platformLibrariesHome = konanHome.resolve("klib/platform/")
+
+    from(platformLibrariesHome)
+
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+
+    archiveBaseName.set("platformLibraries")
+    destinationDirectory.set(buildDir)
+
+    doLast {
+        val file = archiveFile.get().asFile
+        val md5sum = file.md5Digest().toHex()
+        println("$file\nMD5: $md5sum")
+    }
+}
+
 val zipAndMD5CommonizerResults by tasks.creating(Zip::class.java) {
     dependsOn("commonizeNativeDistribution")
     val konanHome = NativeCompilerDownloader(project).compilerDirectory.absoluteFile
@@ -53,7 +72,7 @@ val zipAndMD5CommonizerResults by tasks.creating(Zip::class.java) {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
 
-    archivesName.set("commonizedTargetsLocations")
+    archiveBaseName.set("commonizedTargetsLocations")
     destinationDirectory.set(buildDir)
 
     doLast {
